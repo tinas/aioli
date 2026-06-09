@@ -1,6 +1,6 @@
-import { createStorageClient } from '@ailoi/core'
+import { createStorage } from '@ailoi/core'
 
-const client = createStorageClient({
+const client = createStorage({
   prefix: 'playground',
 })
 
