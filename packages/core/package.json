@@ -14,10 +14,7 @@
   ],
   "type": "module",
   "exports": {
-    ".": {
-      "import": "./dist/index.mjs",
-      "development": "./src/index.ts"
-    },
+    ".": "./dist/index.mjs",
     "./package.json": "./package.json"
   },
   "publishConfig": {
