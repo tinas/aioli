@@ -49,18 +49,7 @@ describe('resolveAdapter', () => {
     const adapter = resolveAdapter({
       storage: 'memory',
       prefix: '',
-      ssr: false,
-      crossTab: { enabled: false },
-    })
-    expect(adapter).toBeInstanceOf(MemoryAdapter)
-  })
-
-  test('returns MemoryAdapter when ssr is true', () => {
-    const adapter = resolveAdapter({
-      storage: 'local',
-      prefix: '',
-      ssr: true,
-      crossTab: { enabled: false },
+      crossTab: false,
     })
     expect(adapter).toBeInstanceOf(MemoryAdapter)
   })
@@ -70,8 +59,7 @@ describe('resolveAdapter', () => {
     const adapter = resolveAdapter({
       storage: custom,
       prefix: '',
-      ssr: false,
-      crossTab: { enabled: false },
+      crossTab: false,
     })
     expect(adapter).toBe(custom)
   })

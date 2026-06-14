@@ -22,80 +22,60 @@ export interface StorageAdapter {
   size(): number
 }
 
-export type StorageChangeEvent = {
-  type: 'change'
+export type StorageEvent = {
+  type: 'add' | 'change' | 'remove' | 'clear'
   key: string
-  newValue: string | null
   oldValue: string | null
+  newValue: string | null
 }
-
-export type StorageClearEvent = {
-  type: 'clear'
-  prefix: string
-}
-
-export type StorageEvent = StorageChangeEvent | StorageClearEvent
 
 export type StorageType = 'local' | 'session' | 'memory'
-
-export interface CrossTabOptions {
-  enabled: boolean
-  channel?: string
-  listen?: boolean
-  broadcast?: boolean
-  filter?: (event: StorageChangeEvent) => boolean
-}
 
 export type ErrorHandler = (error: unknown) => void
 
 export interface StorageOptions {
   storage?: StorageType | StorageAdapter
   prefix?: string
-  ssr?: boolean
-  crossTab?: boolean | CrossTabOptions
+  crossTab?: boolean
   onError?: ErrorHandler
 }
 
 export interface ResolvedStorageOptions {
   storage: StorageType | StorageAdapter
   prefix: string
-  ssr: boolean
-  crossTab: CrossTabOptions
+  crossTab: boolean
   onError?: ErrorHandler
 }
 
-export type Snapshot<T> = () => T
-export type SubscribeFn = (onStoreChange: () => void) => () => void
-
-export interface SubscribeOptions {
-  key?: string
-  keys?: string[]
-}
-
-export interface SnapshotHandle<T> {
-  getSnapshot: Snapshot<T>
-  subscribe: SubscribeFn
+export interface Subscribable<T> {
+  getSnapshot: () => T
+  subscribe: (onStoreChange: () => void) => () => void
 }
 
 export interface StorageClient {
-  getItem<T>(key: string, parser: ParserWithDefault<T, any>): T
-  getItem<T>(key: string, parser: Parser<T>): T | null
-  getItem(key: string): string | null
+  getItem<T>(options: { key: string; parser: ParserWithDefault<T, any> }): T
+  getItem<T>(options: { key: string; parser: Parser<T> }): T | null
+  getItem(options: { key: string }): string | null
 
-  setItem<T>(key: string, value: T, parser?: Parser<T>): void
-  removeItem(key: string): void
-  removeItems(keys: string[]): void
-  clear(options?: { all?: boolean }): void
+  setItem<T>(options: { key: string; value: T; parser?: Parser<T> }): void
+  removeItem(options: { key: string }): void
+  clear(): void
 
   has(key: string): boolean
   keys(): string[]
   size(): number
 
-  subscribe(listener: (event: StorageEvent) => void, options?: SubscribeOptions): () => void
+  subscribe(options: {
+    listener: (event: StorageEvent) => void
+    keys?: string | string[]
+  }): () => void
 
   batch(fn: () => void): void
 
-  snapshot<T>(key: string, parser?: Parser<T> | ParserWithDefault<T, T>): SnapshotHandle<T | null>
+  snapshot<T>(options: {
+    key: string
+    parser?: Parser<T> | ParserWithDefault<T, T>
+  }): Subscribable<T | null>
 
   destroy(): void
 

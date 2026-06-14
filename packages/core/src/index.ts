@@ -21,22 +21,16 @@ export {
 } from './parsers'
 
 export type {
-  CrossTabOptions,
   DefaultValue,
   ErrorHandler,
   Parser,
   ParserConfig,
   ParserWithDefault,
   ResolvedStorageOptions,
-  Snapshot,
-  SnapshotHandle,
+  Subscribable,
   StorageAdapter,
-  StorageChangeEvent,
-  StorageClearEvent,
   StorageClient,
   StorageOptions,
   StorageEvent,
   StorageType,
-  SubscribeFn,
-  SubscribeOptions,
 } from './types'

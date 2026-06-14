@@ -16,98 +16,112 @@ describe('createStorage', () => {
   })
 
   test('setItem and getItem with string', () => {
-    storage.setItem('name', 'hello')
-    expect(storage.getItem('name')).toBe('hello')
+    storage.setItem({ key: 'name', value: 'hello' })
+    expect(storage.getItem({ key: 'name' })).toBe('hello')
   })
 
   test('setItem and getItem with parser', () => {
-    storage.setItem('count', 42, parseAsInteger)
-    expect(storage.getItem('count', parseAsInteger)).toBe(42)
+    storage.setItem({ key: 'count', value: 42, parser: parseAsInteger })
+    expect(storage.getItem({ key: 'count', parser: parseAsInteger })).toBe(42)
   })
 
   test('getItem returns null for missing key without default', () => {
-    expect(storage.getItem('missing')).toBeNull()
+    expect(storage.getItem({ key: 'missing' })).toBeNull()
   })
 
   test('getItem returns default value when key is missing', () => {
     const parser = parseAsInteger.default(0)
-    expect(storage.getItem('missing', parser)).toBe(0)
+    expect(storage.getItem({ key: 'missing', parser })).toBe(0)
   })
 
   test('getItem returns default when stored value fails to parse', () => {
-    storage.setItem('bad', 'not-a-number')
+    storage.setItem({ key: 'bad', value: 'not-a-number' })
     const parser = parseAsInteger.default(99)
-    expect(storage.getItem('bad', parser)).toBe(99)
+    expect(storage.getItem({ key: 'bad', parser })).toBe(99)
   })
 
   test('removeItem removes the key', () => {
-    storage.setItem('key', 'value')
-    storage.removeItem('key')
-    expect(storage.getItem('key')).toBeNull()
+    storage.setItem({ key: 'key', value: 'value' })
+    storage.removeItem({ key: 'key' })
+    expect(storage.getItem({ key: 'key' })).toBeNull()
   })
 
-  test('removeItems removes multiple keys', () => {
-    storage.setItem('a', '1')
-    storage.setItem('b', '2')
-    storage.removeItems(['a', 'b'])
+  test('removeItem removes multiple keys via batch', async () => {
+    storage.setItem({ key: 'a', value: '1' })
+    storage.setItem({ key: 'b', value: '2' })
+    await flush()
+
+    let callCount = 0
+    storage.subscribe({
+      listener: () => {
+        callCount++
+      },
+    })
+    storage.batch(() => {
+      storage.removeItem({ key: 'a' })
+      storage.removeItem({ key: 'b' })
+    })
     expect(storage.has('a')).toBe(false)
     expect(storage.has('b')).toBe(false)
+    expect(callCount).toBe(0)
+    await flush()
+    expect(callCount).toBe(2)
   })
 
   test('has returns correct boolean', () => {
     expect(storage.has('x')).toBe(false)
-    storage.setItem('x', 'val')
+    storage.setItem({ key: 'x', value: 'val' })
     expect(storage.has('x')).toBe(true)
   })
 
   test('keys returns unprefixed keys', () => {
-    storage.setItem('a', '1')
-    storage.setItem('b', '2')
+    storage.setItem({ key: 'a', value: '1' })
+    storage.setItem({ key: 'b', value: '2' })
     expect(storage.keys().sort()).toEqual(['a', 'b'])
   })
 
   test('size returns number of prefixed keys', () => {
-    storage.setItem('a', '1')
-    storage.setItem('b', '2')
+    storage.setItem({ key: 'a', value: '1' })
+    storage.setItem({ key: 'b', value: '2' })
     expect(storage.size()).toBe(2)
   })
 
   test('clear removes only prefixed keys', () => {
-    storage.setItem('a', '1')
-    storage.setItem('b', '2')
+    storage.setItem({ key: 'a', value: '1' })
+    storage.setItem({ key: 'b', value: '2' })
     storage.clear()
     expect(storage.size()).toBe(0)
   })
 
   test('setItem with null removes the key', () => {
-    storage.setItem('key', 'val')
-    storage.setItem('key', null as any)
+    storage.setItem({ key: 'key', value: 'val' })
+    storage.setItem({ key: 'key', value: null as any })
     expect(storage.has('key')).toBe(false)
   })
 
   test('setItem removes key if value equals default', () => {
     const parser = parseAsInteger.default(0)
-    storage.setItem('count', 5, parser)
+    storage.setItem({ key: 'count', value: 5, parser })
     expect(storage.has('count')).toBe(true)
-    storage.setItem('count', 0, parser)
+    storage.setItem({ key: 'count', value: 0, parser })
     expect(storage.has('count')).toBe(false)
   })
 
-  test('subscribe receives change events', async () => {
+  test('subscribe receives add events', async () => {
     const events: any[] = []
-    storage.subscribe(e => events.push(e))
-    storage.setItem('key', 'val')
+    storage.subscribe({ listener: e => events.push(e) })
+    storage.setItem({ key: 'key', value: 'val' })
     await flush()
     expect(events.length).toBe(1)
-    expect(events[0].type).toBe('change')
+    expect(events[0].type).toBe('add')
     expect(events[0].newValue).toBe('val')
   })
 
   test('subscribe with key filter', async () => {
     const events: any[] = []
-    storage.subscribe(e => events.push(e), { key: 'target' })
-    storage.setItem('target', 'yes')
-    storage.setItem('other', 'no')
+    storage.subscribe({ listener: e => events.push(e), keys: 'target' })
+    storage.setItem({ key: 'target', value: 'yes' })
+    storage.setItem({ key: 'other', value: 'no' })
     await flush()
     expect(events.length).toBe(1)
     expect(events[0].key).toBe('test:target')
@@ -115,54 +129,74 @@ describe('createStorage', () => {
 
   test('subscribe returns unsubscribe function', async () => {
     const events: any[] = []
-    const unsub = storage.subscribe(e => events.push(e))
+    const unsub = storage.subscribe({ listener: e => events.push(e) })
     unsub()
-    storage.setItem('key', 'val')
+    storage.setItem({ key: 'key', value: 'val' })
     await flush()
     expect(events.length).toBe(0)
   })
 
-  test('clear emits clear event', async () => {
+  test('clear emits clear events per key', async () => {
     const events: any[] = []
-    storage.subscribe(e => events.push(e))
-    storage.setItem('a', '1')
+    storage.setItem({ key: 'a', value: '1' })
     await flush()
+    storage.subscribe({ listener: e => events.push(e) })
     storage.clear()
     await flush()
-    const clearEvents = events.filter(e => e.type === 'clear')
-    expect(clearEvents.length).toBe(1)
-    expect(clearEvents[0].prefix).toBe('test:')
+    expect(events.length).toBe(1)
+    expect(events[0].type).toBe('clear')
+    expect(events[0].key).toBe('test:a')
+    expect(events[0].oldValue).toBe('1')
+    expect(events[0].newValue).toBeNull()
+  })
+
+  test('clear batches multiple key removals into a single flush', async () => {
+    storage.setItem({ key: 'a', value: '1' })
+    storage.setItem({ key: 'b', value: '2' })
+    storage.setItem({ key: 'c', value: '3' })
+    await flush()
+
+    let callCount = 0
+    storage.subscribe({
+      listener: () => {
+        callCount++
+      },
+    })
+    storage.clear()
+    expect(callCount).toBe(0)
+    await flush()
+    expect(callCount).toBe(3)
   })
 
   test('batch groups operations', async () => {
     const events: any[] = []
-    storage.subscribe(e => events.push(e))
+    storage.subscribe({ listener: e => events.push(e) })
     storage.batch(() => {
-      storage.setItem('x', '1')
-      storage.setItem('y', '2')
+      storage.setItem({ key: 'x', value: '1' })
+      storage.setItem({ key: 'y', value: '2' })
     })
     await flush()
     expect(events.length).toBe(2)
   })
 
   test('snapshot returns getSnapshot and subscribe', () => {
-    storage.setItem('val', '10')
-    const handle = storage.snapshot('val', parseAsInteger)
+    storage.setItem({ key: 'val', value: '10' })
+    const handle = storage.snapshot({ key: 'val', parser: parseAsInteger })
     expect(handle.getSnapshot()).toBe(10)
     expect(typeof handle.subscribe).toBe('function')
   })
 
   test('snapshot with default parser', () => {
-    storage.setItem('val', 'hello')
-    const handle = storage.snapshot('val')
+    storage.setItem({ key: 'val', value: 'hello' })
+    const handle = storage.snapshot({ key: 'val' })
     expect(handle.getSnapshot()).toBe('hello')
   })
 
   test('destroy prevents further events', async () => {
     const events: any[] = []
-    storage.subscribe(e => events.push(e))
+    storage.subscribe({ listener: e => events.push(e) })
     storage.destroy()
-    storage.setItem('key', 'val')
+    storage.setItem({ key: 'key', value: 'val' })
     await flush()
     expect(events.length).toBe(0)
   })

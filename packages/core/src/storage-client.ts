@@ -3,29 +3,20 @@ import { createCrossTabSync, type CrossTabSync } from './cross-tab'
 import { parseAsString, resolveDefault } from './parsers'
 import { scheduler } from './scheduler'
 import type {
-  CrossTabOptions,
   Parser,
   ParserWithDefault,
   ResolvedStorageOptions,
-  SnapshotHandle,
-  StorageChangeEvent,
+  Subscribable,
   StorageClient,
   StorageOptions,
   StorageEvent,
-  SubscribeOptions,
 } from './types'
 
 function resolveOptions(options?: StorageOptions): ResolvedStorageOptions {
-  const crossTab: CrossTabOptions =
-    typeof options?.crossTab === 'boolean'
-      ? { enabled: options.crossTab }
-      : (options?.crossTab ?? { enabled: false })
-
   return {
     storage: options?.storage ?? 'memory',
     prefix: options?.prefix ?? '',
-    ssr: options?.ssr ?? false,
-    crossTab,
+    crossTab: options?.crossTab ?? true,
     onError: options?.onError,
   }
 }
@@ -37,7 +28,7 @@ export function createStorage(options?: StorageOptions): StorageClient {
   const adapter = resolveAdapter(config)
 
   const globalListeners = new Set<(event: StorageEvent) => void>()
-  const keyListeners = new Map<string, Set<(event: StorageChangeEvent) => void>>()
+  const keyListeners = new Map<string, Set<(event: StorageEvent) => void>>()
   let crossTab: CrossTabSync | null = null
   let destroyed = false
 
@@ -45,38 +36,40 @@ export function createStorage(options?: StorageOptions): StorageClient {
 
   if (crossTab) {
     crossTab.subscribe(event => {
-      emit(event)
-      notifyKeyListeners(event.key, event)
+      dispatch(event)
     })
   }
 
-  function emit(event: StorageEvent): void {
+  function dispatch(event: StorageEvent): void {
     if (destroyed) return
     scheduler.schedule(() => {
       for (const listener of globalListeners) {
         listener(event)
       }
-    })
-  }
-
-  function notifyKeyListeners(key: string, event: StorageChangeEvent): void {
-    const listeners = keyListeners.get(key)
-    if (!listeners) return
-    scheduler.schedule(() => {
-      for (const listener of listeners) {
-        listener(event)
+      const keySet = keyListeners.get(event.key)
+      if (keySet) {
+        for (const listener of keySet) {
+          listener(event)
+        }
       }
     })
   }
 
-  function notify(event: StorageChangeEvent): void {
-    emit(event)
-    notifyKeyListeners(event.key, event)
+  function notify(event: StorageEvent): void {
+    dispatch(event)
     crossTab?.broadcast(event)
   }
 
   function resolveKey(key: string): string {
     return `${prefix}${key}`
+  }
+
+  function remove(key: string, type: 'remove' | 'clear' = 'remove'): void {
+    const resolved = resolveKey(key)
+    const oldValue = adapter.getItem(resolved)
+    if (oldValue === null) return
+    adapter.removeItem(resolved)
+    notify({ type, key: resolved, oldValue, newValue: null })
   }
 
   function getDefaultValue<T>(parser: Parser<T>): T | null {
@@ -95,69 +88,60 @@ export function createStorage(options?: StorageOptions): StorageClient {
       return adapter
     },
 
-    getItem(key: string, parser?: Parser<any>): any {
-      const resolved = resolveKey(key)
+    getItem(options: { key: string; parser?: Parser<any> }): any {
+      const resolved = resolveKey(options.key)
       const raw = adapter.getItem(resolved)
-      const resolvedParser = parser ?? parseAsString
+      const resolvedParser = options.parser ?? parseAsString
       if (raw === null) {
         return getDefaultValue(resolvedParser)
       }
       return resolvedParser.parse(raw) ?? getDefaultValue(resolvedParser)
     },
 
-    setItem<T>(key: string, value: T, parser?: Parser<T>): void {
+    setItem<T>(options: { key: string; value: T; parser?: Parser<T> }): void {
+      const { key, value, parser } = options
       const resolved = resolveKey(key)
       const resolvedParser = parser ?? (parseAsString as unknown as Parser<T>)
 
       if (value === null || value === undefined) {
-        client.removeItem(key)
+        remove(key)
         return
       }
 
       if ('defaultValue' in resolvedParser) {
         const def = resolveDefault((resolvedParser as ParserWithDefault<T, T>).defaultValue)
         if (resolvedParser.serialize(value) === resolvedParser.serialize(def)) {
-          client.removeItem(key)
+          remove(key)
           return
         }
       }
 
       const oldValue = adapter.getItem(resolved)
       const newValue = resolvedParser.serialize(value)
+
+      if (oldValue === newValue) return
+
       adapter.setItem(resolved, newValue)
-
-      const event: StorageChangeEvent = { type: 'change', key: resolved, oldValue, newValue }
-      notify(event)
-    },
-
-    removeItem(key: string): void {
-      const resolved = resolveKey(key)
-      const oldValue = adapter.getItem(resolved)
-      adapter.removeItem(resolved)
-
-      const event: StorageChangeEvent = { type: 'change', key: resolved, oldValue, newValue: null }
-      notify(event)
-    },
-
-    removeItems(keys: string[]): void {
-      scheduler.batch(() => {
-        for (const key of keys) {
-          client.removeItem(key)
-        }
+      notify({
+        type: oldValue === null ? 'add' : 'change',
+        key: resolved,
+        oldValue,
+        newValue,
       })
     },
 
-    clear(opts?: { all?: boolean }): void {
-      if (opts?.all) {
-        adapter.clear()
-      } else {
-        for (const key of adapter.keys()) {
-          if (key.startsWith(prefix)) {
-            adapter.removeItem(key)
-          }
+    removeItem(options: { key: string }): void {
+      remove(options.key)
+    },
+
+    clear(): void {
+      const keys = client.keys()
+
+      scheduler.batch(() => {
+        for (const key of keys) {
+          remove(key, 'clear')
         }
-      }
-      emit({ type: 'clear', prefix })
+      })
     },
 
     has(key: string): boolean {
@@ -175,30 +159,33 @@ export function createStorage(options?: StorageOptions): StorageClient {
       return adapter.keys().filter(k => k.startsWith(prefix)).length
     },
 
-    subscribe(listener: (event: StorageEvent) => void, options?: SubscribeOptions): () => void {
-      if (!options?.key && !options?.keys) {
+    subscribe(options: {
+      listener: (event: StorageEvent) => void
+      keys?: string | string[]
+    }): () => void {
+      const { listener, keys } = options
+
+      if (!keys) {
         globalListeners.add(listener)
         return () => {
           globalListeners.delete(listener)
         }
       }
 
-      const targetKeys = options.keys ? options.keys.map(resolveKey) : [resolveKey(options.key!)]
-
-      const wrappedListener = listener as (event: StorageChangeEvent) => void
+      const targetKeys = (Array.isArray(keys) ? keys : [keys]).map(resolveKey)
 
       for (const resolved of targetKeys) {
         if (!keyListeners.has(resolved)) {
           keyListeners.set(resolved, new Set())
         }
-        keyListeners.get(resolved)!.add(wrappedListener)
+        keyListeners.get(resolved)!.add(listener)
       }
 
       return () => {
         for (const resolved of targetKeys) {
           const set = keyListeners.get(resolved)
           if (set) {
-            set.delete(wrappedListener)
+            set.delete(listener)
             if (set.size === 0) keyListeners.delete(resolved)
           }
         }
@@ -209,14 +196,14 @@ export function createStorage(options?: StorageOptions): StorageClient {
       scheduler.batch(fn)
     },
 
-    snapshot<T>(
-      key: string,
-      parser?: Parser<T> | ParserWithDefault<T, T>,
-    ): SnapshotHandle<T | null> {
+    snapshot<T>(options: {
+      key: string
+      parser?: Parser<T> | ParserWithDefault<T, T>
+    }): Subscribable<T | null> {
       return {
-        getSnapshot: () => client.getItem(key, parser as any),
+        getSnapshot: () => client.getItem({ key: options.key, parser: options.parser as any }),
         subscribe: (onStoreChange: () => void) => {
-          return client.subscribe(onStoreChange as any, { key })
+          return client.subscribe({ listener: onStoreChange as any, keys: options.key })
         },
       }
     },

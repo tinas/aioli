@@ -15,7 +15,7 @@ function isStorageAvailable(type: 'localStorage' | 'sessionStorage'): boolean {
 }
 
 export function resolveAdapter(config: ResolvedStorageOptions): StorageAdapter {
-  const { storage, ssr, onError } = config
+  const { storage, onError } = config
 
   if (typeof storage === 'object') {
     return storage
@@ -26,7 +26,7 @@ export function resolveAdapter(config: ResolvedStorageOptions): StorageAdapter {
     typeof globalThis.window === 'undefined' ||
     typeof globalThis.document === 'undefined'
 
-  if (isServer || ssr) {
+  if (isServer) {
     return new MemoryAdapter()
   }
 
