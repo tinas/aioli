@@ -24,12 +24,12 @@ describe('useLocalStorage', () => {
   })
 
   test('writes and reads values', () => {
-    const client = createStorage({ storage: 'memory' })
-    const ref = useLocalStorage({ key: 'count', parser: parseAsInteger.default(0), client })
+    const storage = createStorage({ storage: 'memory' })
+    const ref = useLocalStorage({ key: 'count', parser: parseAsInteger.default(0), storage })
 
     ref.value = 5
     expect(ref.value).toBe(5)
-    expect(client.getItem({ key: 'count', parser: parseAsInteger })).toBe(5)
+    expect(storage.getItem({ key: 'count', parser: parseAsInteger })).toBe(5)
   })
 })
 
@@ -42,12 +42,12 @@ describe('useSessionStorage', () => {
   })
 
   test('writes and reads values', () => {
-    const client = createStorage({ storage: 'memory' })
-    const ref = useSessionStorage({ key: 'step', parser: parseAsInteger.default(0), client })
+    const storage = createStorage({ storage: 'memory' })
+    const ref = useSessionStorage({ key: 'step', parser: parseAsInteger.default(0), storage })
 
     ref.value = 3
     expect(ref.value).toBe(3)
-    expect(client.getItem({ key: 'step', parser: parseAsInteger })).toBe(3)
+    expect(storage.getItem({ key: 'step', parser: parseAsInteger })).toBe(3)
   })
 })
 
@@ -68,9 +68,9 @@ describe('useMemoryStorage', () => {
   })
 
   test('different keys are independent', () => {
-    const client = createStorage({ storage: 'memory' })
-    const ref1 = useMemoryStorage({ key: 'a', parser: parseAsString.default('x'), client })
-    const ref2 = useMemoryStorage({ key: 'b', parser: parseAsString.default('y'), client })
+    const storage = createStorage({ storage: 'memory' })
+    const ref1 = useMemoryStorage({ key: 'a', parser: parseAsString.default('x'), storage })
+    const ref2 = useMemoryStorage({ key: 'b', parser: parseAsString.default('y'), storage })
 
     ref1.value = 'changed'
     expect(ref1.value).toBe('changed')

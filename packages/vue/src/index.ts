@@ -7,7 +7,13 @@ export { useStorage } from './use-storage'
 export type { UseStorageReturn } from './use-storage'
 export { useLocalStorage, useSessionStorage, useMemoryStorage } from './use-scoped-storage'
 
-export type { UseStorageOptions, UseScopedStorageOptions } from './types'
+export type {
+  StorageOptionsBase,
+  StorageOptionsWithDefault,
+  StorageOptionsWithParser,
+  UseStorageOptions,
+  UseScopedStorageOptions,
+} from './types'
 
 export {
   parseAsBoolean,

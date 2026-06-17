@@ -1,14 +1,21 @@
-import type { Parser, StorageAdapter, StorageClient, StorageType } from '@aioli/core'
+import type { Parser, ParserWithDefault, StorageClient, StorageType } from '@aioli/core'
 
-export interface UseStorageOptions {
+export interface StorageOptionsWithDefault<T, D extends T, TStorage = StorageType | StorageClient> {
   key: string
-  parser?: Parser<any>
-  client?: StorageClient
-  storage?: StorageType | StorageAdapter
+  parser: ParserWithDefault<T, D>
+  storage?: TStorage
 }
 
-export interface UseScopedStorageOptions {
+export interface StorageOptionsWithParser<T, TStorage = StorageType | StorageClient> {
   key: string
-  parser?: Parser<any>
-  client?: StorageClient
+  parser: Parser<T>
+  storage?: TStorage
 }
+
+export interface StorageOptionsBase<TStorage = StorageType | StorageClient> {
+  key: string
+  storage?: TStorage
+}
+
+export type UseStorageOptions = StorageOptionsBase & { parser?: Parser<any> }
+export type UseScopedStorageOptions = StorageOptionsBase<StorageClient> & { parser?: Parser<any> }

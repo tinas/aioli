@@ -1,5 +1,5 @@
 import { createStorage, parseAsInteger, parseAsString } from '@aioli/core'
-import { beforeEach, describe, expect, test } from 'vite-plus/test'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vite-plus/test'
 import { createApp, effectScope } from 'vue'
 
 import { createAioli } from '../src/plugin'
@@ -18,55 +18,55 @@ function withPlugin<T>(fn: () => T): T {
 }
 
 describe('useStorage', () => {
-  describe('with explicit client', () => {
-    let client: ReturnType<typeof createStorage>
+  describe('with explicit storage client', () => {
+    let storage: ReturnType<typeof createStorage>
 
     beforeEach(() => {
-      client = createStorage({ storage: 'memory' })
+      storage = createStorage({ storage: 'memory' })
     })
 
     test('returns default value when key does not exist', () => {
-      const ref = useStorage({ key: 'count', parser: parseAsInteger.default(0), client })
+      const ref = useStorage({ key: 'count', parser: parseAsInteger.default(0), storage })
       expect(ref.value).toBe(0)
     })
 
     test('returns null for parser without default when key does not exist', () => {
-      const ref = useStorage({ key: 'missing', parser: parseAsString, client })
+      const ref = useStorage({ key: 'missing', parser: parseAsString, storage })
       expect(ref.value).toBeNull()
     })
 
     test('reads existing value from storage', () => {
-      client.setItem({ key: 'name', value: 'hello', parser: parseAsString })
-      const ref = useStorage({ key: 'name', parser: parseAsString.default(''), client })
+      storage.setItem({ key: 'name', value: 'hello', parser: parseAsString })
+      const ref = useStorage({ key: 'name', parser: parseAsString.default(''), storage })
       expect(ref.value).toBe('hello')
     })
 
     test('writes value to storage on set', () => {
-      const ref = useStorage({ key: 'name', parser: parseAsString.default(''), client })
+      const ref = useStorage({ key: 'name', parser: parseAsString.default(''), storage })
       ref.value = 'world'
-      expect(client.getItem({ key: 'name', parser: parseAsString })).toBe('world')
+      expect(storage.getItem({ key: 'name', parser: parseAsString })).toBe('world')
     })
 
     test('removes key when set to null', () => {
-      client.setItem({ key: 'name', value: 'hello', parser: parseAsString })
-      const ref = useStorage({ key: 'name', parser: parseAsString, client })
+      storage.setItem({ key: 'name', value: 'hello', parser: parseAsString })
+      const ref = useStorage({ key: 'name', parser: parseAsString, storage })
       ref.value = null
-      expect(client.getItem({ key: 'name' })).toBeNull()
+      expect(storage.getItem({ key: 'name' })).toBeNull()
     })
 
     test('reacts to external storage changes', async () => {
-      const ref = useStorage({ key: 'count', parser: parseAsInteger.default(0), client })
+      const ref = useStorage({ key: 'count', parser: parseAsInteger.default(0), storage })
       expect(ref.value).toBe(0)
 
-      client.setItem({ key: 'count', value: 42, parser: parseAsInteger })
+      storage.setItem({ key: 'count', value: 42, parser: parseAsInteger })
       await flush()
 
       expect(ref.value).toBe(42)
     })
 
     test('multiple refs for same key stay in sync', async () => {
-      const ref1 = useStorage({ key: 'shared', parser: parseAsString.default(''), client })
-      const ref2 = useStorage({ key: 'shared', parser: parseAsString.default(''), client })
+      const ref1 = useStorage({ key: 'shared', parser: parseAsString.default(''), storage })
+      const ref2 = useStorage({ key: 'shared', parser: parseAsString.default(''), storage })
 
       ref1.value = 'updated'
       await flush()
@@ -95,35 +95,86 @@ describe('useStorage', () => {
       expect(ref.value).toBe('ok')
     })
 
-    test('throws when no plugin is installed and no client provided', () => {
+    test('falls back to memory when no plugin is installed', () => {
       const app = createApp({ setup: () => () => null })
+      let ref: any
 
-      expect(() => {
-        app.runWithContext(() => {
-          useStorage({ key: 'x', parser: parseAsString.default('') })
-        })
-      }).toThrow('No StorageClients found')
+      app.runWithContext(() => {
+        ref = useStorage({ key: 'x', parser: parseAsString.default('fallback') })
+      })
+
+      expect(ref.value).toBe('fallback')
     })
   })
 
   describe('scope disposal', () => {
     test('unsubscribes on scope dispose', async () => {
-      const client = createStorage({ storage: 'memory' })
+      const storage = createStorage({ storage: 'memory' })
       const scope = effectScope()
       let ref: any
 
       scope.run(() => {
-        ref = useStorage({ key: 'val', parser: parseAsInteger.default(0), client })
+        ref = useStorage({ key: 'val', parser: parseAsInteger.default(0), storage })
       })
 
       expect(ref.value).toBe(0)
 
       scope.stop()
 
-      client.setItem({ key: 'val', value: 99, parser: parseAsInteger })
+      storage.setItem({ key: 'val', value: 99, parser: parseAsInteger })
       await flush()
 
       expect(ref.value).toBe(0)
+    })
+  })
+
+  describe('warnings', () => {
+    let warnSpy: ReturnType<typeof vi.spyOn>
+    const originalEnv = process.env.NODE_ENV
+
+    beforeEach(() => {
+      warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      process.env.NODE_ENV = 'development'
+    })
+
+    afterEach(() => {
+      warnSpy.mockRestore()
+      process.env.NODE_ENV = originalEnv
+    })
+
+    test('warns when called outside effect scope', () => {
+      const storage = createStorage({ storage: 'memory' })
+      useStorage({ key: 'x', parser: parseAsString.default(''), storage })
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('should only be used inside a setup() function'),
+      )
+    })
+
+    test('does not warn when called inside effect scope', () => {
+      const storage = createStorage({ storage: 'memory' })
+      const scope = effectScope()
+
+      scope.run(() => {
+        useStorage({ key: 'x', parser: parseAsString.default(''), storage })
+      })
+
+      expect(warnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('should only be used inside a setup() function'),
+      )
+
+      scope.stop()
+    })
+
+    test('warns and falls back to memory when no plugin is installed', () => {
+      const app = createApp({ setup: () => () => null })
+
+      app.runWithContext(() => {
+        const ref = useStorage({ key: 'x', parser: parseAsString.default('ok') })
+        expect(ref.value).toBe('ok')
+      })
+
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('No plugin found'))
     })
   })
 })

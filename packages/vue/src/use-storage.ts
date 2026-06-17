@@ -1,49 +1,33 @@
-import type {
-  Parser,
-  ParserWithDefault,
-  StorageAdapter,
-  StorageClient,
-  StorageType,
-} from '@aioli/core'
+import type { StorageClient, StorageType } from '@aioli/core'
 import { createStorage } from '@aioli/core'
 import { type Ref, customRef, getCurrentScope, onScopeDispose } from 'vue'
 
-import type { UseStorageOptions } from './types'
+import type {
+  StorageOptionsBase,
+  StorageOptionsWithDefault,
+  StorageOptionsWithParser,
+  UseStorageOptions,
+} from './types'
 import { useStorageClient } from './use-storage-client'
 
 export type UseStorageReturn<T> = Ref<T>
 
-export function useStorage<T, D extends T>(options: {
-  key: string
-  parser: ParserWithDefault<T, D>
-  client?: StorageClient
-  storage?: StorageType | StorageAdapter
-}): Ref<T>
-
-export function useStorage<T>(options: {
-  key: string
-  parser: Parser<T>
-  client?: StorageClient
-  storage?: StorageType | StorageAdapter
-}): Ref<T | null>
-
-export function useStorage(options: {
-  key: string
-  client?: StorageClient
-  storage?: StorageType | StorageAdapter
-}): Ref<string | null>
-
-export function useStorage<T>(options: {
-  key: string
-  parser?: Parser<T>
-  client?: StorageClient
-  storage?: StorageType | StorageAdapter
-}): Ref<T | null>
-
+export function useStorage<T, D extends T>(options: StorageOptionsWithDefault<T, D>): Ref<T>
+export function useStorage<T>(options: StorageOptionsWithParser<T>): Ref<T | null>
+export function useStorage(options: StorageOptionsBase): Ref<string | null>
 export function useStorage(options: UseStorageOptions): Ref<any> {
-  const { key, parser, client: explicitClient, storage } = options
+  const { key, parser, storage } = options
 
-  const client = explicitClient ?? resolveClient(storage)
+  if (process.env.NODE_ENV === 'development') {
+    if (!getCurrentScope()) {
+      console.warn(
+        '[@aioli/vue]: useStorage() should only be used inside a setup() function or a running effect scope. ' +
+          'Using it outside may lead to memory leaks.',
+      )
+    }
+  }
+
+  const client = resolveClient(storage)
 
   return customRef((track, trigger) => {
     let value = client.getItem({ key, parser: parser as any })
@@ -74,10 +58,21 @@ export function useStorage(options: UseStorageOptions): Ref<any> {
   })
 }
 
-function resolveClient(storage?: StorageType | StorageAdapter): StorageClient {
+function resolveClient(storage?: StorageType | StorageClient): StorageClient {
   if (typeof storage === 'object') {
-    return createStorage({ storage })
+    return storage
   }
-  const clients = useStorageClient()
-  return clients[storage ?? 'memory']
+
+  try {
+    const clients = useStorageClient()
+    return clients[storage ?? 'memory']
+  } catch {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(
+        '[@aioli/vue]: No plugin found. Falling back to in-memory storage. ' +
+          'Install the plugin via `app.use(createAioli())` or pass a StorageClient directly.',
+      )
+    }
+    return createStorage({ storage: storage ?? 'memory' })
+  }
 }
