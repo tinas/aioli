@@ -1,14 +1,14 @@
-import type { Parser, StorageAdapter, StorageClient, StorageType } from '@ailoi/core'
+import type { Parser, StorageAdapter, StorageClient, StorageType } from '@aioli/core'
 
 export interface UseStorageOptions {
   key: string
-  parser: Parser<any>
+  parser?: Parser<any>
   client?: StorageClient
   storage?: StorageType | StorageAdapter
 }
 
 export interface UseScopedStorageOptions {
   key: string
-  parser: Parser<any>
+  parser?: Parser<any>
   client?: StorageClient
 }

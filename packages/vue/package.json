@@ -1,12 +1,12 @@
 {
-  "name": "@ailoi/vue",
+  "name": "@aioli/vue",
   "version": "0.0.0",
-  "description": "Vue composables for reactive storage powered by @ailoi/core.",
+  "description": "Vue composables for reactive storage powered by @aioli/core.",
   "license": "MIT",
   "author": "Ahmet Tinastepe <ahmettinastepe0@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tinas/ailoi.git",
+    "url": "git+https://github.com/tinas/aioli.git",
     "directory": "packages/vue"
   },
   "files": [
@@ -28,7 +28,7 @@
     "prepublishOnly": "vp run build"
   },
   "dependencies": {
-    "@ailoi/core": "workspace:*"
+    "@aioli/core": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.6.2",

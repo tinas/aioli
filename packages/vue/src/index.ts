@@ -1,5 +1,5 @@
-export { createAiloi, StorageClientsKey } from './plugin'
-export type { AiloiPluginOptions, StorageClients } from './plugin'
+export { createAioli, StorageClientsKey } from './plugin'
+export type { AioliPluginOptions, StorageClients } from './plugin'
 
 export { useStorageClient } from './use-storage-client'
 
@@ -23,7 +23,8 @@ export {
   parseAsIndex,
   parseAsMap,
   defineParser,
-} from '@ailoi/core'
+  createStorage,
+} from '@aioli/core'
 
 export type {
   Parser,
@@ -31,4 +32,4 @@ export type {
   StorageClient,
   StorageOptions,
   StorageType,
-} from '@ailoi/core'
+} from '@aioli/core'

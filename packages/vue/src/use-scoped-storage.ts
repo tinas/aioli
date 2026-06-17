@@ -1,4 +1,4 @@
-import type { Parser, ParserWithDefault, StorageClient } from '@ailoi/core'
+import type { Parser, ParserWithDefault, StorageClient } from '@aioli/core'
 import type { Ref } from 'vue'
 
 import type { UseScopedStorageOptions } from './types'
@@ -16,6 +16,11 @@ export function useLocalStorage<T>(options: {
   client?: StorageClient
 }): Ref<T | null>
 
+export function useLocalStorage(options: {
+  key: string
+  client?: StorageClient
+}): Ref<string | null>
+
 export function useLocalStorage(options: UseScopedStorageOptions): Ref<any> {
   return useStorage({ ...options, storage: 'local' })
 }
@@ -32,6 +37,11 @@ export function useSessionStorage<T>(options: {
   client?: StorageClient
 }): Ref<T | null>
 
+export function useSessionStorage(options: {
+  key: string
+  client?: StorageClient
+}): Ref<string | null>
+
 export function useSessionStorage(options: UseScopedStorageOptions): Ref<any> {
   return useStorage({ ...options, storage: 'session' })
 }
@@ -47,6 +57,11 @@ export function useMemoryStorage<T>(options: {
   parser: Parser<T>
   client?: StorageClient
 }): Ref<T | null>
+
+export function useMemoryStorage(options: {
+  key: string
+  client?: StorageClient
+}): Ref<string | null>
 
 export function useMemoryStorage(options: UseScopedStorageOptions): Ref<any> {
   return useStorage({ ...options, storage: 'memory' })

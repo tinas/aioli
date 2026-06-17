@@ -1,13 +1,13 @@
-import { createStorage, parseAsInteger, parseAsString } from '@ailoi/core'
+import { createStorage, parseAsInteger, parseAsString } from '@aioli/core'
 import { describe, expect, test } from 'vite-plus/test'
 import { createApp } from 'vue'
 
-import { createAiloi } from '../src/plugin'
+import { createAioli } from '../src/plugin'
 import { useLocalStorage, useMemoryStorage, useSessionStorage } from '../src/use-scoped-storage'
 
 function withPlugin<T>(fn: () => T): T {
   const app = createApp({ setup: () => () => null })
-  app.use(createAiloi())
+  app.use(createAioli())
   let result: T
   app.runWithContext(() => {
     result = fn()

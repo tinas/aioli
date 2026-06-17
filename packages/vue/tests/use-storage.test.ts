@@ -1,15 +1,15 @@
-import { createStorage, parseAsInteger, parseAsString } from '@ailoi/core'
+import { createStorage, parseAsInteger, parseAsString } from '@aioli/core'
 import { beforeEach, describe, expect, test } from 'vite-plus/test'
 import { createApp, effectScope } from 'vue'
 
-import { createAiloi } from '../src/plugin'
+import { createAioli } from '../src/plugin'
 import { useStorage } from '../src/use-storage'
 
 const flush = () => new Promise(resolve => setTimeout(resolve, 0))
 
 function withPlugin<T>(fn: () => T): T {
   const app = createApp({ setup: () => () => null })
-  app.use(createAiloi())
+  app.use(createAioli())
   let result: T
   app.runWithContext(() => {
     result = fn()

@@ -7,7 +7,7 @@ export function useStorageClient(): StorageClients {
 
   if (!clients) {
     throw new Error(
-      '[@ailoi/vue]: No StorageClients found. Install the plugin via `app.use(createAiloi())`.',
+      '[@aioli/vue]: No StorageClients found. Install the plugin via `app.use(createAioli())`.',
     )
   }
 

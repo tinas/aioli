@@ -4,8 +4,8 @@ import type {
   StorageAdapter,
   StorageClient,
   StorageType,
-} from '@ailoi/core'
-import { createStorage } from '@ailoi/core'
+} from '@aioli/core'
+import { createStorage } from '@aioli/core'
 import { type Ref, customRef, getCurrentScope, onScopeDispose } from 'vue'
 
 import type { UseStorageOptions } from './types'
@@ -23,6 +23,19 @@ export function useStorage<T, D extends T>(options: {
 export function useStorage<T>(options: {
   key: string
   parser: Parser<T>
+  client?: StorageClient
+  storage?: StorageType | StorageAdapter
+}): Ref<T | null>
+
+export function useStorage(options: {
+  key: string
+  client?: StorageClient
+  storage?: StorageType | StorageAdapter
+}): Ref<string | null>
+
+export function useStorage<T>(options: {
+  key: string
+  parser?: Parser<T>
   client?: StorageClient
   storage?: StorageType | StorageAdapter
 }): Ref<T | null>

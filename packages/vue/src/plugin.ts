@@ -1,4 +1,4 @@
-import { type StorageClient, type StorageOptions, createStorage } from '@ailoi/core'
+import { type StorageClient, type StorageOptions, createStorage } from '@aioli/core'
 import { type InjectionKey, type Plugin } from 'vue'
 
 export interface StorageClients {
@@ -7,15 +7,15 @@ export interface StorageClients {
   memory: StorageClient
 }
 
-export const StorageClientsKey: InjectionKey<StorageClients> = Symbol('AiloiStorageClients')
+export const StorageClientsKey: InjectionKey<StorageClients> = Symbol('AioliStorageClients')
 
-export interface AiloiPluginOptions {
+export interface AioliPluginOptions {
   local?: Omit<StorageOptions, 'storage'>
   session?: Omit<StorageOptions, 'storage'>
   memory?: Omit<StorageOptions, 'storage'>
 }
 
-export function createAiloi(options?: AiloiPluginOptions): Plugin {
+export function createAioli(options?: AioliPluginOptions): Plugin {
   return {
     install(app) {
       const clients: StorageClients = {
