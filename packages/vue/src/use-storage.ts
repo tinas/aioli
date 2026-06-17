@@ -10,8 +10,6 @@ import type {
 } from './types'
 import { useStorageClient } from './use-storage-client'
 
-export type UseStorageReturn<T> = Ref<T>
-
 export function useStorage<T, D extends T>(options: StorageOptionsWithDefault<T, D>): Ref<T>
 export function useStorage<T>(options: StorageOptionsWithParser<T>): Ref<T | null>
 export function useStorage(options: StorageOptionsBase): Ref<string | null>
