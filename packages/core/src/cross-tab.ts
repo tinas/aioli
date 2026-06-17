@@ -48,7 +48,7 @@ export function createCrossTabSync(config: ResolvedStorageOptions): CrossTabSync
   let channel: BroadcastChannel | null = null
 
   if (typeof BroadcastChannel !== 'undefined') {
-    channel = new BroadcastChannel(`ailoi:${prefix}`)
+    channel = new BroadcastChannel(`aioli:${prefix}`)
     channel.onmessage = (e: MessageEvent) => {
       const event = e.data as StorageEvent
       if (isSeen(event)) return

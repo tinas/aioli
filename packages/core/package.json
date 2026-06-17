@@ -1,12 +1,12 @@
 {
-  "name": "@ailoi/core",
+  "name": "@aioli/core",
   "version": "0.0.0",
   "description": "The framework agnostic core that powers local storage and session storage.",
   "license": "MIT",
   "author": "Ahmet Tinastepe <ahmettinastepe0@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tinas/ailoi.git",
+    "url": "git+https://github.com/tinas/aioli.git",
     "directory": "packages/core"
   },
   "files": [

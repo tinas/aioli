@@ -5,7 +5,7 @@ import { WebStorageAdapter } from './web-storage-adapter'
 function isStorageAvailable(type: 'localStorage' | 'sessionStorage'): boolean {
   try {
     const storage = globalThis[type]
-    const testKey = '__ailoi_test__'
+    const testKey = '__aioli_test__'
     storage.setItem(testKey, 'test')
     storage.removeItem(testKey)
     return true

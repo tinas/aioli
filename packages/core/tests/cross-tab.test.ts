@@ -40,7 +40,7 @@ describe('CrossTabSync - BroadcastChannel', () => {
     const events: StorageEvent[] = []
     sync.subscribe(e => events.push(e))
 
-    const channel = new BroadcastChannel('ailoi:test:')
+    const channel = new BroadcastChannel('aioli:test:')
     channel.postMessage({
       type: 'add',
       key: 'test:name',
@@ -59,7 +59,7 @@ describe('CrossTabSync - BroadcastChannel', () => {
 
   test('broadcast sends to other tabs via BroadcastChannel', async () => {
     const received: StorageEvent[] = []
-    const receiver = new BroadcastChannel('ailoi:test:')
+    const receiver = new BroadcastChannel('aioli:test:')
     receiver.onmessage = (e: MessageEvent) => received.push(e.data)
 
     sync.broadcast({
@@ -82,7 +82,7 @@ describe('CrossTabSync - BroadcastChannel', () => {
     sync.subscribe(e => events.push(e))
     sync.destroy()
 
-    const channel = new BroadcastChannel('ailoi:test:')
+    const channel = new BroadcastChannel('aioli:test:')
     channel.postMessage({
       type: 'add',
       key: 'test:x',
@@ -211,7 +211,7 @@ describe('CrossTabSync - dedup', () => {
       }
     })
 
-    const channel = new BroadcastChannel('ailoi:test:')
+    const channel = new BroadcastChannel('aioli:test:')
     channel.postMessage({
       type: 'add',
       key: 'test:key',
@@ -245,7 +245,7 @@ describe('CrossTabSync - dedup', () => {
     expect(events.length).toBe(1)
 
     // BC message arrives before setTimeout(0) clears the seen set — deduped
-    const channel = new BroadcastChannel('ailoi:test:')
+    const channel = new BroadcastChannel('aioli:test:')
     channel.postMessage({
       type: 'add',
       key: 'test:key',
@@ -343,7 +343,7 @@ describe('CrossTabSync - event loop', () => {
     const events: StorageEvent[] = []
     sync.subscribe(e => events.push(e))
 
-    const channel = new BroadcastChannel('ailoi:test:')
+    const channel = new BroadcastChannel('aioli:test:')
     channel.postMessage({
       type: 'add',
       key: 'test:async',
@@ -387,7 +387,7 @@ describe('CrossTabSync - event loop', () => {
     sync.subscribe(e => events.push(e))
 
     // Simulate BC delivering an event (marks it as seen)
-    const channel = new BroadcastChannel('ailoi:test:')
+    const channel = new BroadcastChannel('aioli:test:')
     channel.postMessage({
       type: 'add',
       key: 'test:dup',
