@@ -1,10 +1,10 @@
+import { parseAsString, resolveDefault } from '@aioli/parsers'
+import type { Parser, ParserWithDefault } from '@aioli/parsers'
+
 import { resolveAdapter } from './adapters/index'
 import { createCrossTabSync, type CrossTabSync } from './cross-tab'
-import { parseAsString, resolveDefault } from './parsers'
 import { scheduler } from './scheduler'
 import type {
-  Parser,
-  ParserWithDefault,
   ResolvedStorageOptions,
   Subscribable,
   StorageClient,
