@@ -9,7 +9,7 @@ const ahmetStorageClient = createStorage({
 const pageIndex = useLocalStorage({
   key: 'pageIndex',
   parser: parseAsIndex.default(0),
-  client: ahmetStorageClient,
+  storage: ahmetStorageClient,
 })
 
 const searchText = useLocalStorage({

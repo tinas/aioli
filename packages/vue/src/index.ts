@@ -14,27 +14,4 @@ export type {
   UseScopedStorageOptions,
 } from './types'
 
-export {
-  parseAsBoolean,
-  parseAsDate,
-  parseAsFloat,
-  parseAsInteger,
-  parseAsJson,
-  parseAsString,
-  parseAsStringEnum,
-  parseAsStringLiteral,
-  parseAsNumberLiteral,
-  parseAsArrayOf,
-  parseAsIndex,
-  parseAsMap,
-  defineParser,
-  createStorage,
-} from '@aioli/core'
-
-export type {
-  Parser,
-  ParserWithDefault,
-  StorageClient,
-  StorageOptions,
-  StorageType,
-} from '@aioli/core'
+export * from '@aioli/core'
