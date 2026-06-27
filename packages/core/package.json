@@ -1,0 +1,40 @@
+{
+  "name": "@aioli/core",
+  "version": "0.0.0",
+  "description": "The framework agnostic core that powers local storage and session storage.",
+  "license": "MIT",
+  "author": "Ahmet Tinastepe <ahmettinastepe0@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tinas/aioli.git",
+    "directory": "packages/core"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test",
+    "check": "vp check",
+    "prepublishOnly": "vp run build"
+  },
+  "dependencies": {
+    "@aioli/parsers": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.2",
+    "@typescript/native-preview": "7.0.0-dev.20260509.2",
+    "bumpp": "^11.1.0",
+    "typescript": "^6.0.3",
+    "vite-plus": "catalog:"
+  }
+}
