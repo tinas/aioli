@@ -1,10 +1,9 @@
-import { parseAsString, resolveDefault } from '@aioli/parsers'
-import type { Parser, ParserWithDefault } from '@aioli/parsers'
-
-import { resolveAdapter } from './adapters/index'
+import { resolveAdapter } from './adapters'
 import { createCrossTabSync, type CrossTabSync } from './cross-tab'
 import { scheduler } from './scheduler'
 import type {
+  Codec,
+  CodecWithDefault,
   ResolvedStorageOptions,
   Subscribable,
   StorageClient,
@@ -72,9 +71,17 @@ export function createStorage(options?: StorageOptions): StorageClient {
     notify({ type, key: resolved, oldValue, newValue: null })
   }
 
-  function getDefaultValue<T>(parser: Parser<T>): T | null {
-    if ('defaultValue' in parser) {
-      return resolveDefault((parser as ParserWithDefault<T, T>).defaultValue)
+  function resolveDefault<T>(defaultValue: T | (() => T)): T {
+    return typeof defaultValue === 'function' ? (defaultValue as () => T)() : defaultValue
+  }
+
+  function hasDefault<T>(codec: Codec<T>): codec is CodecWithDefault<T> {
+    return 'defaultValue' in codec && (codec as CodecWithDefault<T>).defaultValue !== undefined
+  }
+
+  function getDefaultValue<T>(codec: Codec<T>): T | null {
+    if (hasDefault(codec)) {
+      return resolveDefault(codec.defaultValue) as T
     }
     return null
   }
@@ -88,37 +95,39 @@ export function createStorage(options?: StorageOptions): StorageClient {
       return adapter
     },
 
-    getItem(options: { key: string; parser?: Parser<any> }): any {
-      const resolved = resolveKey(options.key)
+    getItem(options: { key: string; parser?: Codec<any> }): any {
+      const { key, parser } = options
+      const resolved = resolveKey(key)
       const raw = adapter.getItem(resolved)
-      const resolvedParser = options.parser ?? parseAsString
-      if (raw === null) {
-        return getDefaultValue(resolvedParser)
-      }
-      return resolvedParser.parse(raw) ?? getDefaultValue(resolvedParser)
+      if (!parser) return raw
+      if (raw === null) return getDefaultValue(parser)
+      return parser.parse(raw) ?? getDefaultValue(parser)
     },
 
-    setItem<T>(options: { key: string; value: T; parser?: Parser<T> }): void {
+    setItem<T>(options: { key: string; value: T; parser?: Codec<T> }): void {
       const { key, value, parser } = options
       const resolved = resolveKey(key)
-      const resolvedParser = parser ?? (parseAsString as unknown as Parser<T>)
 
       if (value === null || value === undefined) {
         remove(key)
         return
       }
 
-      if ('defaultValue' in resolvedParser) {
-        const def = resolveDefault((resolvedParser as ParserWithDefault<T, T>).defaultValue)
-        if (resolvedParser.serialize(value) === resolvedParser.serialize(def)) {
-          remove(key)
-          return
+      let newValue: string
+      if (parser) {
+        if (hasDefault(parser)) {
+          const def = resolveDefault(parser.defaultValue)
+          if (parser.serialize(value) === parser.serialize(def)) {
+            remove(key)
+            return
+          }
         }
+        newValue = parser.serialize(value)
+      } else {
+        newValue = String(value)
       }
 
       const oldValue = adapter.getItem(resolved)
-      const newValue = resolvedParser.serialize(value)
-
       if (oldValue === newValue) return
 
       adapter.setItem(resolved, newValue)
@@ -198,7 +207,7 @@ export function createStorage(options?: StorageOptions): StorageClient {
 
     snapshot<T>(options: {
       key: string
-      parser?: Parser<T> | ParserWithDefault<T, T>
+      parser?: Codec<T> | CodecWithDefault<T, T>
     }): Subscribable<T | null> {
       return {
         getSnapshot: () => client.getItem({ key: options.key, parser: options.parser as any }),

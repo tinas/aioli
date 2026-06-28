@@ -7,9 +7,11 @@
 
 <!-- /automd -->
 
-> Framework-agnostic, type-safe storage client with parsers, subscriptions, and cross-tab sync.
+> Framework-agnostic, type-safe storage client with codecs, subscriptions, and cross-tab sync.
 
-**@aioli/core** is the framework-agnostic foundation that powers all framework bindings. It provides a `StorageClient` abstraction over `localStorage`, `sessionStorage`, and in-memory storage — with bidirectional parsers, key-scoped subscriptions, batched updates, and automatic cross-tab synchronization via `BroadcastChannel`.
+**@aioli/core** is the framework-agnostic foundation that powers all framework bindings. It provides a `StorageClient` abstraction over `localStorage`, `sessionStorage`, and in-memory storage — with bidirectional codecs, key-scoped subscriptions, batched updates, and automatic cross-tab synchronization via `BroadcastChannel`.
+
+For a batteries-included set of typed codecs (numbers, dates, JSON, enums, arrays, maps), pair it with [**@aioli/parsers**](./parsers.md).
 
 ## Installation
 
@@ -20,7 +22,8 @@ pnpm add @aioli/core
 ## Quick Start
 
 ```ts
-import { createStorage, parseAsInteger } from '@aioli/core'
+import { createStorage } from '@aioli/core'
+import { parseAsInteger } from '@aioli/parsers'
 
 const storage = createStorage({ storage: 'local', prefix: 'app:' })
 
@@ -75,28 +78,35 @@ storage.batch(() => {
 storage.destroy()
 ```
 
-### Default Values
+### Codecs
 
-When a parser has a default, `getItem` never returns `null`:
+Any `parser` argument accepts an object matching the `Codec<T>` interface:
 
 ```ts
-import { parseAsInteger } from '@aioli/core'
+import type { Codec } from '@aioli/core'
+
+const intCodec: Codec<number> = {
+  parse: v => {
+    const n = Number.parseInt(v, 10)
+    return Number.isNaN(n) ? null : n
+  },
+  serialize: v => String(v),
+}
+
+storage.setItem({ key: 'count', value: 5, parser: intCodec })
+```
+
+A `CodecWithDefault<T>` adds a `defaultValue` (eager value or factory) — `getItem` then never returns `null` for that key, and writing the default removes the key. The [`@aioli/parsers`](./parsers.md) package provides a full set of ready-made parsers (numbers, booleans, dates, JSON, arrays, maps, enums) plus a `defineParser` helper for custom shapes.
+
+### Default Values
+
+When a codec carries a default, `getItem` never returns `null`:
+
+```ts
+import { parseAsInteger } from '@aioli/parsers'
 
 const parser = parseAsInteger.default(0)
 storage.getItem({ key: 'missing', parser }) // 0
-```
-
-For reference types (objects, arrays), pass a factory function to avoid shared instances across calls:
-
-```ts
-import { parseAsJson } from '@aioli/core'
-
-interface UserPrefs {
-  theme: string
-  fontSize: number
-}
-
-const parser = parseAsJson<UserPrefs>().default(() => ({ theme: 'light', fontSize: 14 }))
 ```
 
 Setting the value back to its default automatically removes the key from storage:
@@ -108,6 +118,8 @@ storage.has('count') // true
 storage.setItem({ key: 'count', value: 0, parser })
 storage.has('count') // false — default removes the key
 ```
+
+See [parsers documentation](./parsers.md) for details on factory defaults for reference types.
 
 ## Subscriptions
 
@@ -169,90 +181,6 @@ storage.subscribe({
 const handle = storage.snapshot({ key: 'count', parser: parseAsInteger })
 handle.getSnapshot() // number | null
 handle.subscribe(onStoreChange) // () => unsubscribe
-```
-
-## Parsers
-
-Parsers handle bidirectional conversion between storage strings and typed values. Each parser defines `parse` (string → value | null) and `serialize` (value → string).
-
-### Built-in Parsers
-
-| Parser                               | Type       | Stored As                  | Description                               |
-| ------------------------------------ | ---------- | -------------------------- | ----------------------------------------- |
-| `parseAsString`                      | `string`   | `headphones`               | Raw string value                          |
-| `parseAsInteger`                     | `number`   | `42`                       | `parseInt` base 10                        |
-| `parseAsFloat`                       | `number`   | `41.015`                   | `parseFloat`                              |
-| `parseAsBoolean`                     | `boolean`  | `true`                     | Accepts `"true"` / `"false"`              |
-| `parseAsIndex`                       | `number`   | `1` → `0`                  | 1-based in storage, 0-based in code       |
-| `parseAsStringLiteral([...])`        | Union      | `price`                    | Validates against allowed values          |
-| `parseAsNumberLiteral([...])`        | Union      | `5`                        | Validates against allowed numbers         |
-| `parseAsStringEnum(values)`          | Enum       | `ACTIVE`                   | For TypeScript string enums               |
-| `parseAsDate`                        | `Date`     | `2024-01-15`               | YYYY-MM-DD format                         |
-| `parseAsDate.iso()`                  | `Date`     | `2024-01-15T10:30:00.000Z` | Full ISO 8601                             |
-| `parseAsDate.timestamp()`            | `Date`     | `1705312200000`            | Unix milliseconds                         |
-| `parseAsArrayOf(parser)`             | `T[]`      | `vue,ts`                   | Comma-separated (configurable)            |
-| `parseAsJson<T>()`                   | `T`        | `{"k":"v"}`                | JSON-encoded values                       |
-| `parseAsMap(keyParser, valueParser)` | `Map<K,V>` | `a:1;b:2`                  | Key-value pairs (configurable separators) |
-
-### String Literals and Enums
-
-```ts
-import { parseAsStringLiteral, parseAsStringEnum } from '@aioli/core'
-
-const sortParser = parseAsStringLiteral(['price', 'name', 'rating']).default('price')
-// Parses: 'price' | 'name' | 'rating'
-
-enum OrderStatus {
-  Active = 'ACTIVE',
-  Completed = 'COMPLETED',
-  Cancelled = 'CANCELLED',
-}
-
-const statusParser = parseAsStringEnum<OrderStatus>(Object.values(OrderStatus))
-```
-
-### Arrays and Maps
-
-```ts
-import { parseAsArrayOf, parseAsMap, parseAsString, parseAsInteger } from '@aioli/core'
-
-// Comma-separated array
-const tagsParser = parseAsArrayOf(parseAsString).default([])
-// "vue,ts,vite" → ['vue', 'ts', 'vite']
-
-// Custom separator
-const pricesParser = parseAsArrayOf(parseAsInteger, ';')
-// "100;500;1000" → [100, 500, 1000]
-
-// Map with custom separators
-const filtersParser = parseAsMap(parseAsString, parseAsInteger, ';', ':')
-// "min:0;max:100" → Map { 'min' => 0, 'max' => 100 }
-```
-
-### Custom Parsers
-
-```ts
-import { defineParser } from '@aioli/core'
-
-interface PriceRange {
-  min: number
-  max: number
-}
-
-const parseAsPriceRange = defineParser<PriceRange>({
-  parse(value) {
-    const parts = value.split('-')
-    if (parts.length !== 2) return null
-    const min = Number(parts[0])
-    const max = Number(parts[1])
-    if (Number.isNaN(min) || Number.isNaN(max)) return null
-    return { min, max }
-  },
-  serialize: v => `${v.min}-${v.max}`,
-})
-
-// Use with default
-const parser = parseAsPriceRange.default({ min: 0, max: 1000 })
 ```
 
 ## Custom Storage Adapters

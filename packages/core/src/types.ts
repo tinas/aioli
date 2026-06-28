@@ -1,4 +1,11 @@
-import type { Parser, ParserWithDefault } from '@aioli/parsers'
+export interface Codec<T> {
+  parse: (value: string) => T | null
+  serialize: (value: T) => string
+}
+
+export interface CodecWithDefault<T, D extends T = T> extends Codec<T> {
+  readonly defaultValue: D | (() => D)
+}
 
 export interface StorageAdapter {
   getItem(key: string): string | null
@@ -40,11 +47,11 @@ export interface Subscribable<T> {
 }
 
 export interface StorageClient {
-  getItem<T>(options: { key: string; parser: ParserWithDefault<T, any> }): T
-  getItem<T>(options: { key: string; parser: Parser<T> }): T | null
+  getItem<T>(options: { key: string; parser: CodecWithDefault<T, any> }): T
+  getItem<T>(options: { key: string; parser: Codec<T> }): T | null
   getItem(options: { key: string }): string | null
 
-  setItem<T>(options: { key: string; value: T; parser?: Parser<T> }): void
+  setItem<T>(options: { key: string; value: T; parser?: Codec<T> }): void
   removeItem(options: { key: string }): void
   clear(): void
 
@@ -61,7 +68,7 @@ export interface StorageClient {
 
   snapshot<T>(options: {
     key: string
-    parser?: Parser<T> | ParserWithDefault<T, T>
+    parser?: Codec<T> | CodecWithDefault<T, T>
   }): Subscribable<T | null>
 
   destroy(): void

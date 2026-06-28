@@ -15,7 +15,7 @@ import {
   parseAsStringEnum,
   parseAsStringLiteral,
   resolveDefault,
-} from '../src/index'
+} from '../src'
 
 describe('resolveDefault', () => {
   test('resolves a plain value', () => {

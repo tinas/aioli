@@ -1,4 +1,5 @@
-import { createStorage, parseAsInteger, parseAsString } from '@aioli/core'
+import { createStorage } from '@aioli/core'
+import { parseAsInteger, parseAsString } from '@aioli/parsers'
 import { describe, expect, test } from 'vite-plus/test'
 import { createApp } from 'vue'
 

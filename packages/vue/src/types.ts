@@ -1,4 +1,5 @@
-import type { Parser, ParserWithDefault, StorageClient, StorageType } from '@aioli/core'
+import type { StorageClient, StorageType } from '@aioli/core'
+import type { Parser, ParserWithDefault } from '@aioli/parsers'
 
 export interface StorageOptionsWithDefault<T, D extends T, TStorage = StorageType | StorageClient> {
   key: string

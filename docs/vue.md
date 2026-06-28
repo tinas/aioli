@@ -177,7 +177,7 @@ const value = useStorage({ key: 'name', parser: parseAsString, storage: client }
 
 ## Parsers
 
-All parsers from `@aioli/core` are re-exported:
+All parsers from [`@aioli/parsers`](./parsers.md) are re-exported from `@aioli/vue` for convenience:
 
 ```ts
 import {
@@ -197,7 +197,7 @@ import {
 } from '@aioli/vue'
 ```
 
-See the [parsers documentation](https://github.com/tinas/aioli/blob/main/docs/core.md#parsers) in `@aioli/core` for full details.
+See the [parsers documentation](./parsers.md) for the full list, custom parsers via `defineParser`, and the `Codec` contract used by `@aioli/core`.
 
 ### Default Values
 

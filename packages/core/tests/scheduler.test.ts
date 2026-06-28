@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vite-plus/test'
 
-import { createScheduler } from '../src/index'
+import { createScheduler } from '../src'
 
 const flush = () => new Promise(resolve => setTimeout(resolve, 0))
 

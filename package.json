@@ -10,7 +10,9 @@
     "prepare": "vp config"
   },
   "devDependencies": {
+    "@types/node": "^25.6.2",
     "happy-dom": "catalog:",
+    "typescript": "^6.0.3",
     "vite-plus": "catalog:"
   },
   "engines": {

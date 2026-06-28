@@ -1,9 +1,11 @@
 export { createStorage } from './storage-client'
 export { createScheduler, scheduler } from './scheduler'
-export { MemoryAdapter, WebStorageAdapter, resolveAdapter } from './adapters/index'
+export { MemoryAdapter, WebStorageAdapter, resolveAdapter } from './adapters'
 export { createCrossTabSync } from './cross-tab'
 
 export type {
+  Codec,
+  CodecWithDefault,
   ErrorHandler,
   ResolvedStorageOptions,
   Subscribable,
@@ -13,5 +15,3 @@ export type {
   StorageEvent,
   StorageType,
 } from './types'
-
-export * from '@aioli/parsers'

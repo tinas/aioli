@@ -5,11 +5,9 @@ packages:
 catalogMode: prefer
 
 catalog:
-  '@types/node': ^24
-  typescript: ^5
   vite: npm:@voidzero-dev/vite-plus-core@latest
   vitest: npm:@voidzero-dev/vite-plus-test@latest
-  vite-plus: latest
+  vite-plus: 0.1.23
   happy-dom: ^20.10.6
 overrides:
   vite: 'catalog:'

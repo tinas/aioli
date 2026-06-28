@@ -1,8 +1,21 @@
 import { beforeEach, describe, expect, test } from 'vite-plus/test'
 
-import { createStorage, parseAsInteger } from '../src/index'
+import { createStorage } from '../src'
+import type { Codec, CodecWithDefault } from '../src'
 
 const flush = () => new Promise(resolve => setTimeout(resolve, 0))
+
+const intCodec: Codec<number> = {
+  parse: v => {
+    const n = Number.parseInt(v, 10)
+    return Number.isNaN(n) ? null : n
+  },
+  serialize: v => String(Math.trunc(v)),
+}
+
+function withDefault<T>(codec: Codec<T>, defaultValue: T): CodecWithDefault<T> {
+  return { ...codec, defaultValue }
+}
 
 describe('createStorage', () => {
   let storage: ReturnType<typeof createStorage>
@@ -21,8 +34,8 @@ describe('createStorage', () => {
   })
 
   test('setItem and getItem with parser', () => {
-    storage.setItem({ key: 'count', value: 42, parser: parseAsInteger })
-    expect(storage.getItem({ key: 'count', parser: parseAsInteger })).toBe(42)
+    storage.setItem({ key: 'count', value: 42, parser: intCodec })
+    expect(storage.getItem({ key: 'count', parser: intCodec })).toBe(42)
   })
 
   test('getItem returns null for missing key without default', () => {
@@ -30,13 +43,13 @@ describe('createStorage', () => {
   })
 
   test('getItem returns default value when key is missing', () => {
-    const parser = parseAsInteger.default(0)
+    const parser = withDefault(intCodec, 0)
     expect(storage.getItem({ key: 'missing', parser })).toBe(0)
   })
 
   test('getItem returns default when stored value fails to parse', () => {
     storage.setItem({ key: 'bad', value: 'not-a-number' })
-    const parser = parseAsInteger.default(99)
+    const parser = withDefault(intCodec, 99)
     expect(storage.getItem({ key: 'bad', parser })).toBe(99)
   })
 
@@ -100,7 +113,7 @@ describe('createStorage', () => {
   })
 
   test('setItem removes key if value equals default', () => {
-    const parser = parseAsInteger.default(0)
+    const parser = withDefault(intCodec, 0)
     storage.setItem({ key: 'count', value: 5, parser })
     expect(storage.has('count')).toBe(true)
     storage.setItem({ key: 'count', value: 0, parser })
@@ -181,7 +194,7 @@ describe('createStorage', () => {
 
   test('snapshot returns getSnapshot and subscribe', () => {
     storage.setItem({ key: 'val', value: '10' })
-    const handle = storage.snapshot({ key: 'val', parser: parseAsInteger })
+    const handle = storage.snapshot({ key: 'val', parser: intCodec })
     expect(handle.getSnapshot()).toBe(10)
     expect(typeof handle.subscribe).toBe('function')
   })

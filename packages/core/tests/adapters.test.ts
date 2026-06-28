@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vite-plus/test'
 
-import { MemoryAdapter, resolveAdapter } from '../src/index'
+import { MemoryAdapter, resolveAdapter } from '../src'
 
 describe('MemoryAdapter', () => {
   let adapter: MemoryAdapter

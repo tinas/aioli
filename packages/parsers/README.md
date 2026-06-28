@@ -1,23 +1,26 @@
-# vite-plus-starter
+# @aioli/parsers
 
-A starter for creating a Vite Plus project.
+<!-- automd:badges color=F0DB4F bundlephobia -->
 
-## Development
+[![npm version](https://img.shields.io/npm/v/@aioli/parsers?color=F0DB4F)](https://npmjs.com/package/@aioli/parsers)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@aioli/parsers?color=F0DB4F)](https://bundlephobia.com/package/@aioli/parsers)
 
-- Install dependencies:
+<!-- /automd -->
+
+> Type-safe, composable parsers for serializing and deserializing storage values.
+
+## Documentation
+
+Full documentation is available on GitHub:
+
+**[Read the docs →](https://github.com/tinas/aioli/blob/main/docs/parsers.md)**
+
+## Installation
 
 ```bash
-vp install
+pnpm add @aioli/parsers
 ```
 
-- Run the unit tests:
+## License
 
-```bash
-vp test
-```
-
-- Build the library:
-
-```bash
-vp pack
-```
+[MIT](https://github.com/tinas/aioli/blob/main/LICENSE)
